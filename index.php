@@ -1,39 +1,39 @@
 <?php
 include '../freaky_functions/freaky_functions.php';
 include 'classes/XmlParser.php';
+include 'classes/DBHandler.php';
+
+$db = new DBHandler('localhost', 'root', 'hedpe1981');
+$db->connect('schneekloth1');
 
 $xml = new XmlParser('sitemap-old.xml', 'loc');
 
-//$xml->listEntries();
 
-
-foreach ($xml->getEntries() as $entry)
+foreach ($xml->getArticleIds() as $articleId)
 {
-	$explodedEntryArray = explode('/', $entry);
+	$ergebnis = $db->selector('catalog_product_flat_1', 'url_path', 'artikel_id', $articleId);
 	
-	if (end($explodedEntryArray) != "")
+	while ($row = mysql_fetch_object($ergebnis))
 	{
-		$tempArray[] = end($explodedEntryArray);
+		$newUrl = $row->url_path;
 	}
+
+	$redirectListArray[] = array($articleId, $newUrl);	// gibt 1285 Ergebnisse
+	//$redirectListArray[$articleId] = $newUrl;				// gibt 625 Ergebnisse
 }
 
-foreach ($tempArray as $part)
+//dump($redirectListArray);
+
+$fp = fopen('files/redirectList.csv', 'w');
+
+foreach ($redirectListArray as $listEntry)
 {
-	if (preg_match('/--[1-9]+.html/', $part) == 1)
-	{
-		$urlsArray[] = $part;
-	}
+	fputcsv($fp, $listEntry);
 }
 
-foreach ($urlsArray as $url)
-{
-	$lastUrlParts[] = end(explode('--', $url));
-}
-
-foreach ($lastUrlParts as $lastUrlPart)
-{
-	$articeIds[] = reset(explode('.', $lastUrlPart));
-}
+fclose($fp);
 
 
-dump($articeIds);
+
+
+
